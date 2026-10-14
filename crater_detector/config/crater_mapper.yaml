@@ -3,7 +3,7 @@ crater_mapper:
     range_topic: /mavros/rangefinder_pub
     map_topic: /map            # crater grid copies this map's size/origin (RTAB-Map)
     map_frame: map
-    sensor_frame: lidar
+    sensor_frame: tof
     # Fallback grid until /map arrives
     resolution: 0.05
     width_m: 20.0

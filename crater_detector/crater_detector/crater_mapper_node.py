@@ -87,7 +87,7 @@ class CraterMapper(Node):
         self.declare_parameter('range_topic', '/mavros/rangefinder_pub')
         self.declare_parameter('map_topic', '/map')  # grid geometry follows this map
         self.declare_parameter('map_frame', 'map')
-        self.declare_parameter('sensor_frame', 'lidar')
+        self.declare_parameter('sensor_frame', 'tof')
         # Fallback grid used until a /map message arrives.
         self.declare_parameter('resolution', 0.05)
         self.declare_parameter('width_m', 20.0)

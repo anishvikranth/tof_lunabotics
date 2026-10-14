@@ -20,7 +20,7 @@ Recalibrate ground distance: `ros2 service call /crater_detector/recalibrate std
 
 ## Crater mapper (crater layer for Nav2)
 
-`crater_mapper` projects each ToF reading into the `map` frame with TF (`map → … → lidar`),
+`crater_mapper` projects each ToF reading into the `map` frame with TF (`map → … → tof`),
 tracks the local ground level, and marks points more than `depth_threshold` below ground.
 
 | Output | Type | Use |
@@ -40,10 +40,10 @@ publish `map → odom` (set the ZED wrapper's `publish_map_tf: false` when RTAB-
 ```bash
 cd ~/crater_ws && colcon build --symlink-install --packages-select crater_detector
 source install/setup.bash
-ros2 launch crater_detector crater_system.launch.py            # detector + mapper + base_link->lidar TF
+ros2 launch crater_detector crater_system.launch.py            # detector + mapper + base_link->tof TF
 # mount arguments (defaults shown):
 ros2 launch crater_detector crater_system.launch.py x:=0.30 z:=0.45 pitch_deg:=20.0
-# URDF already publishes base_link->lidar:
+# URDF already publishes base_link->tof:
 ros2 launch crater_detector crater_system.launch.py publish_static_tf:=false
 ```
 

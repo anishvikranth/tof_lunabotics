@@ -1,4 +1,4 @@
-"""Starts crater_detector, crater_mapper and the base_link -> lidar static transform."""
+"""Starts crater_detector, crater_mapper and the base_link -> tof static transform."""
 
 import math
 import os
@@ -16,7 +16,7 @@ def static_tf(context):
          for k in ('x', 'y', 'z', 'pitch_deg', 'base_frame', 'sensor_frame')}
     return [Node(
         package='tf2_ros', executable='static_transform_publisher',
-        name='lidar_static_tf', output='screen',
+        name='tof_static_tf', output='screen',
         condition=IfCondition(LaunchConfiguration('publish_static_tf')),
         arguments=['--x', a['x'], '--y', a['y'], '--z', a['z'],
                    '--roll', '0', '--pitch', str(math.radians(float(a['pitch_deg']))), '--yaw', '0',
@@ -32,9 +32,9 @@ def generate_launch_description():
         DeclareLaunchArgument('pitch_deg', default_value='20.0',
                               description='downward tilt (positive = down)'),
         DeclareLaunchArgument('base_frame', default_value='base_link'),
-        DeclareLaunchArgument('sensor_frame', default_value='lidar'),
+        DeclareLaunchArgument('sensor_frame', default_value='tof'),
         DeclareLaunchArgument('publish_static_tf', default_value='true',
-                              description='false if your URDF already has base_link -> lidar'),
+                              description='false if your URDF already has base_link -> tof'),
         OpaqueFunction(function=static_tf),
         Node(package='crater_detector', executable='crater_detector_node',
              name='crater_detector', output='screen',
