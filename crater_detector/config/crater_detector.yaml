@@ -1,0 +1,11 @@
+crater_detector:
+  ros__parameters:
+    range_topic: /mavros/rangefinder_pub
+    output_topic: /crater_detected
+    baseline: 0.0              # ground distance d (m); 0.0 = auto-calibrate at startup
+    calibration_samples: 30    # readings averaged (median) for d
+    jump_threshold: 0.15       # d_new - d above this = crater point (m)
+    median_window: 5           # spike filter length
+    confirm_count: 3           # consecutive readings to switch true/false
+    no_return_is_crater: true  # no echo (inf / > max_range) counts as crater
+    sensor_timeout: 1.0        # warn "sensor not connected" after this many seconds without data
