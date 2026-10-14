@@ -16,6 +16,9 @@ from rclpy.qos import QoSProfile, ReliabilityPolicy, HistoryPolicy
 from sensor_msgs.msg import Range
 from std_msgs.msg import Bool, Float32
 from std_srvs.srv import Trigger
+from mavros_msgs.srv import MessageInterval
+
+DISTANCE_SENSOR_MSG_ID = 132  # MAVLink DISTANCE_SENSOR
 
 
 class CraterDetector(Node):
@@ -37,6 +40,11 @@ class CraterDetector(Node):
         self.declare_parameter('no_return_is_crater', True)
         # Warn if no range message arrives for this long (s).
         self.declare_parameter('sensor_timeout', 1.0)
+        # While the sensor is silent, ask the FCU (via MAVROS) to stream DISTANCE_SENSOR
+        # at this rate. Needed when the Pixhawk's MAVn_EXTRA3 stream rate is 0.
+        self.declare_parameter('request_stream', True)
+        self.declare_parameter('stream_rate', 20.0)
+        self.declare_parameter('message_interval_service', '/mavros/set_message_interval')
 
         p = self.get_parameter
         self.jump_threshold = p('jump_threshold').value
@@ -66,6 +74,12 @@ class CraterDetector(Node):
         self.sensor_ok = False
         self.watchdog = self.create_timer(2.0, self.check_sensor)
 
+        self.request_stream = p('request_stream').value
+        self.stream_rate = float(p('stream_rate').value)
+        self.interval_srv = p('message_interval_service').value
+        self.interval_client = self.create_client(MessageInterval, self.interval_srv)
+        self.stream_request_pending = False
+
         if self.baseline is None:
             self.get_logger().info(
                 f'Calibrating ground distance from {self.calibration_samples} readings; '
@@ -89,12 +103,34 @@ class CraterDetector(Node):
         if self.last_msg_time is None:
             self.get_logger().warn(
                 f'Sensor not connected: no data received on {self.range_topic}')
+            self.request_distance_stream()
             return
         silent = (now - self.last_msg_time).nanoseconds / 1e9
         if silent > self.sensor_timeout:
             self.sensor_ok = False
             self.get_logger().warn(
                 f'Sensor not connected: no data on {self.range_topic} for {silent:.1f} s')
+            self.request_distance_stream()
+
+    def request_distance_stream(self):
+        if not self.request_stream or self.stream_request_pending:
+            return
+        if not self.interval_client.service_is_ready():
+            self.get_logger().warn(f'MAVROS not running: {self.interval_srv} not available')
+            return
+        self.stream_request_pending = True
+        req = MessageInterval.Request(message_id=DISTANCE_SENSOR_MSG_ID,
+                                      message_rate=self.stream_rate)
+        self.interval_client.call_async(req).add_done_callback(self.on_stream_reply)
+
+    def on_stream_reply(self, future):
+        self.stream_request_pending = False
+        result = future.result()
+        if result is not None and result.success:
+            self.get_logger().info(
+                f'Requested DISTANCE_SENSOR at {self.stream_rate:.0f} Hz from the FCU')
+        else:
+            self.get_logger().warn('FCU rejected the DISTANCE_SENSOR stream request')
 
     def on_range(self, msg: Range):
         self.last_msg_time = self.get_clock().now()

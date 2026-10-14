@@ -9,3 +9,5 @@ crater_detector:
     confirm_count: 3           # consecutive readings to switch true/false
     no_return_is_crater: true  # no echo (inf / > max_range) counts as crater
     sensor_timeout: 1.0        # warn "sensor not connected" after this many seconds without data
+    request_stream: true       # ask MAVROS for DISTANCE_SENSOR while the sensor is silent
+    stream_rate: 20.0          # Hz requested from the FCU
