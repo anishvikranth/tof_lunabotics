@@ -1,0 +1,17 @@
+alias nitros_rtabmap='ros2 launch rtabmap_launch rtabmap.launch.py \
+  rtabmap_viz:=false \
+  visual_odometry:=false \
+  odom_topic:=/odometry/filtered \
+  rgb_topic:=/zed/zed/rgb/color/rect/image \
+  camera_info_topic:=/zed/zed/rgb/color/rect/camera_info \
+  depth_topic:=/zed/zed/depth/depth_registered \
+  approx_sync:=true \
+  args:="--delete_db_on_start \
+         --Grid/CellSize 0.06 \
+         --Grid/MaxObstacleHeight 1.0 \
+         --Grid/MaxGroundAngle 15 \
+         --GridGlobal/MinSize 50.0 \
+         --Optimizer/Robust true \
+         --Reg/Force3DoF false \
+	 --Grid/MinGroundHeight -0.15 \
+         --Grid/RayTracing true"'

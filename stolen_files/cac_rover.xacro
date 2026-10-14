@@ -1,0 +1,313 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro" name="cac_rover">
+    <xacro:macro name="inertial_box" params="mass x y z *origin">
+        <inertial>
+            <xacro:insert_block name="origin"/>
+            <mass value="${mass}" />
+            <inertia 
+                ixx="${(1/12) * mass * (y*y + z*z)}" ixy="0.0" ixz="0.0"
+                iyy="${(1/12) * mass * (x*x + z*z)}" iyz="0.0"
+                izz="${(1/12) * mass * (x*x + y*y)}" />
+        </inertial>
+    </xacro:macro>
+
+    <xacro:macro name="inertial_cylinder" params="mass length radius *origin">
+        <inertial>
+            <xacro:insert_block name="origin"/>
+            <mass value="${mass}" />
+            <inertia 
+                ixx="${(1/12) * mass * (3*radius*radius + length*length)}" ixy="0.0" ixz="0.0"
+                iyy="${(1/12) * mass * (3*radius*radius + length*length)}" iyz="0.0"
+                izz="${(1/2) * mass * (radius*radius)}" />
+        </inertial>
+    </xacro:macro>
+
+    <xacro:macro name="aluminium">
+        <material name="aluminium">
+            <color rgba="0.8 0.8 0.75 1.0"/>
+        </material>
+    </xacro:macro>
+
+    <xacro:macro name="polycarbonate">
+        <material name="polycarbonate">
+            <color rgba="0.8 0.85 0.9 0.4"/>
+        </material>
+    </xacro:macro>
+
+    <xacro:macro name="black_pla">
+        <material name="black_pla">
+            <color rgba="0.1 0.1 0.1 1.0"/>
+        </material>
+    </xacro:macro>
+
+    <xacro:macro name="gray_tpu">
+        <material name="gray_tpu">
+            <color rgba="0.255 0.255 0.255 1.0"/>
+        </material>
+    </xacro:macro>
+    <!-- Base Footprint Link -->
+    <link name="base_footprint" />
+
+    <!-- Base Footprint Joint -->
+    <joint name="base_link_joint" type="fixed">
+        <origin xyz="0.0 0.0 0.0085" rpy="0.0 0.0 0.0"/>
+        <parent link="base_footprint"/>
+        <child link="base_link"/>
+    </joint>
+
+    <!-- Base (Chassis) Link -->
+    <link name="base_link">
+        <xacro:inertial_box mass="2.0" x="0.55" y="0.31" z="0.017">
+            <origin xyz="0.0 0.0 -0.0085" rpy="0.0 0.0 0.0"/>
+        </xacro:inertial_box>
+        <visual name="base_link_visual">
+            <origin xyz="0.0 0.0 -0.0085" rpy="0.0 0.0 0.0"/>
+            <geometry>
+                <box size="0.55 0.31 0.017"/>
+            </geometry>
+            <xacro:aluminium />
+        </visual>
+        <collision>
+            <origin xyz="0.0 0.0 -0.0085" rpy="0.0 0.0 0.0"/>
+            <geometry>
+                <box size="0.55 0.31 0.017"/>
+            </geometry>
+        </collision>
+    </link>
+
+    <!-- Elecbox joint -->
+    <joint name="elecbox_joint" type="fixed">
+        <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+        <parent link="base_link"/>
+        <child link="elecbox_link"/>
+    </joint>
+
+    <!-- Elecbox Link -->
+    <link name="elecbox_link">
+        <xacro:inertial_box mass="1.1" x="0.29" y="0.3" z="0.26">
+            <origin xyz="0.0 0.0 0.13" rpy="0.0 0.0 0.0"/>
+        </xacro:inertial_box>
+        <visual name="elecbox_link_visual">
+            <origin xyz="0.0 0.0 0.13" rpy="0.0 0.0 0.0"/>
+            <geometry>
+                <box size="0.29 0.3 0.26"/>
+            </geometry>
+            <xacro:polycarbonate />
+        </visual>
+        <collision>
+            <origin xyz="0.0 0.0 0.13" rpy="0.0 0.0 0.0"/>
+            <geometry>
+                <box size="0.29 0.3 0.26"/>
+            </geometry>
+        </collision>
+    </link>
+
+    <!-- Shoulder Block Links -->
+    <xacro:macro name="shoulder_block_link" params="direction">
+        <xacro:property name="rotation" value="${0.0 if direction == 'front' else pi}" />
+        <link name="${direction}_shoulder_block_link">
+            <xacro:inertial_box mass="1.9" x="0.091" y="0.063" z="0.126">
+                <origin xyz="0.0 0.0 0.063" rpy="0.0 0.0 0.0"/>
+            </xacro:inertial_box>
+            <visual name="${direction}_shoulder_box_link_visual">
+                <origin xyz="0.0 0.0 0.063" rpy="0.0 0.0 0.0"/>
+                <geometry>
+                    <box size="0.091 0.063 0.126"/>
+                </geometry>
+                <xacro:aluminium />
+            </visual>
+            <collision>
+                <origin xyz="0.0 0.0 0.063" rpy="0.0 0.0 0.0"/>
+                <geometry>
+                    <box size="0.091 0.063 0.126"/>
+                </geometry>
+            </collision>
+        </link>
+
+        <joint name="${direction}_shoulder_block_link_joint" type="fixed">
+            <xacro:property name="x_val" value="${0.2295 if direction == 'front' else -0.2295}" />
+            <xacro:property name="offset" value="${-0.0585 if direction == 'front' else 0.0585}"/>
+            <origin xyz="${x_val} ${offset} 0.0" rpy="0.0 0.0 ${rotation}"/>
+            <parent link="base_link"/>
+            <child link="${direction}_shoulder_block_link"/>  
+        </joint>
+    </xacro:macro>
+
+    <xacro:shoulder_block_link direction="front" />
+    <xacro:shoulder_block_link direction="back" />
+
+    <!-- Shoulder Links -->
+    <xacro:macro name="shoulder_link" params="direction">  
+        <link name="${direction}_shoulder_link">
+            <xacro:inertial_cylinder mass="0.3" length="0.29" radius="0.0095">
+                <origin xyz="0.0 0.0 0.145" rpy="0.0 0.0 0.0"/>
+            </xacro:inertial_cylinder> 
+            <visual name="${direction}_shoulder_link_visual">
+                <origin xyz="0.0 0.0 0.145" rpy="0.0 0.0 0.0"/>
+                <geometry>
+                    <cylinder radius="0.0095" length="0.29"/>
+                </geometry>
+                <xacro:aluminium />
+            </visual>
+            <collision>
+                <origin xyz="0.0 0.0 0.145" rpy="0.0 0.0 0.0"/>
+                <geometry>
+                    <cylinder radius="0.0095" length="0.29"/>
+                </geometry>
+            </collision>
+        </link>
+
+        <joint name="${direction}_shoulder_link_joint" type="revolute">
+            <origin xyz="0.0 0.06 0.043" rpy="0.0 0.0 0.0"/>
+            <parent link="${direction}_shoulder_block_link"/>
+            <child link="${direction}_shoulder_link"/>
+            <axis xyz="0.0 1.0 0.0"/>
+            <limit lower="0.0" upper="${3 * pi / 4}" effort="10.0" velocity="1.0"/>
+        </joint>
+    </xacro:macro>
+    
+    <xacro:shoulder_link direction="front" />
+    <xacro:shoulder_link direction="back"/>
+
+    <!-- Drum Block Link -->
+    <xacro:macro name="drum_block_link" params="direction">
+        <link name="${direction}_drum_block_link">
+            <xacro:inertial_box mass="1.5" x="0.13" y="0.0629" z="0.106">
+                <origin xyz="0.065 0.0 0.0" rpy="0.0 0.0 0.0"/>
+            </xacro:inertial_box>
+            <visual name="${direction}_drum_block_link_visual">
+                <origin xyz="0.065 0.0 0.0" rpy="0.0 0.0 0.0"/>
+                <geometry>
+                    <box size="0.13 0.0629 0.106"/>
+                </geometry>
+                <xacro:black_pla />
+            </visual>
+            <collision>
+                <origin xyz="0.065 0.0 0.0" rpy="0.0 0.0 0.0"/>
+                <geometry>
+                    <box size="0.13 0.0629 0.106"/>
+                </geometry>
+            </collision>
+        </link>
+
+        <joint name="${direction}_drum_block_link_joint" type="fixed">
+            <origin xyz="0.0 0.0 0.29" rpy="0.0 0.0 0.0"/>
+            <parent link="${direction}_shoulder_link"/>
+            <child link="${direction}_drum_block_link"/>
+        </joint>
+    </xacro:macro>
+
+    <xacro:drum_block_link direction="front" />
+    <xacro:drum_block_link direction="back" />
+
+    <!-- Drum Links -->
+    <xacro:macro name="drum_link" params="direction side">
+        <link name="${direction}_${side}_drum_link">
+            <xacro:inertial_cylinder mass="0.8" length="0.16" radius="0.089">
+                <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+            </xacro:inertial_cylinder> 
+            <visual name="">
+                <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+                <geometry>
+                    <cylinder radius="0.089" length="0.16"/>
+                </geometry>
+                <xacro:aluminium />
+            </visual>
+            <collision>
+                <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+                <geometry>
+                    <cylinder radius="0.089" length="0.16"/>
+                </geometry>
+            </collision>
+        </link>
+
+        <joint name="${direction}_${side}_drum_link_joint" type="continuous">
+            <xacro:property name="align" value="${pi / 2 if side == 'left' else -pi / 2}" />
+            <xacro:property name="y_offset" value="${0.16845 if side == 'left' else -0.16845}" />
+            <origin xyz="0.065 ${y_offset} 0.0" rpy="${align} 0.0 0.0"/>
+            <parent link="${direction}_drum_block_link"/>
+            <child link="${direction}_${side}_drum_link"/>
+            <axis xyz="0.0 0.0 1.0"/>
+            <limit effort="10.0" velocity="1.0"/>
+        </joint>
+    </xacro:macro>
+
+    <xacro:drum_link direction="front" side="left" />
+    <xacro:drum_link direction="front" side="right" />
+    <xacro:drum_link direction="back" side="left" />
+    <xacro:drum_link direction="back" side="right" />
+
+    <!-- Wheel Links -->
+    <xacro:macro name="wheel_link" params="direction side">
+        <xacro:property name="rotation" value="${0.0 if direction == 'front' else pi}" />
+        <link name="${direction}_${side}_wheel_link">
+            <xacro:inertial_cylinder mass="2.5" radius="0.1" length="0.1">
+                <origin xyz="0.0 0.0 0.05" rpy="0.0 0.0 0.0"/>
+            </xacro:inertial_cylinder>
+            <visual name="">
+                <origin xyz="0.0 0.0 0.05" rpy="0.0 0.0 0.0"/>
+                <geometry>
+                    <cylinder radius="0.1" length="0.1"/>
+                </geometry>
+                <xacro:gray_tpu />
+            </visual>
+            <collision>
+                <origin xyz="0.0 0.0 0.05" rpy="0.0 0.0 0.0"/>
+                <geometry>
+                    <cylinder radius="0.1" length="0.1"/>
+                </geometry>
+            </collision>
+        </link>
+
+        <joint name="${direction}_${side}_wheel_link_joint" type="continuous">
+            <xacro:property name="x_off" value="${0.210 if direction == 'front' else -0.210}" />
+            <xacro:property name="y_off" value="${0.16375 if side == 'left' else -0.16375}" />
+            <xacro:property name="wheel_align" value="${pi / 2 if side == 'right' else -pi / 2}"/>
+            <origin xyz="${x_off} ${y_off} -0.063238" rpy="${wheel_align} 0.0 0.0"/>
+            <parent link="base_link"/>
+            <child link="${direction}_${side}_wheel_link"/>
+            <axis xyz="0.0 0.0 1.0"/>
+            <limit effort="10.0" velocity="1.0"/>
+        </joint>
+    </xacro:macro>
+
+    <xacro:wheel_link direction="front" side="left" />
+    <xacro:wheel_link direction="front" side="right" />
+    <xacro:wheel_link direction="back" side="left" />
+    <xacro:wheel_link direction="back" side="right" />
+
+    <!-- ZED Camera Link -->
+    <!-- <link name="zed_camera_link">
+        <xacro:inertial_box mass="0.166" x="0.17525" y="0.03025" z="0.0431" >
+            <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+        </xacro:inertial_box>
+        <visual name="zed_camera_link_visual">
+            <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+            <geometry>
+                <box size="0.17525 0.03025 0.0431"/>
+            </geometry>
+            <xacro:black_pla />
+        </visual>
+        <collision>
+            <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+            <geometry>
+                <box size="0.17525 0.03025 0.0431"/>
+            </geometry>
+        </collision>
+    </link> -->
+
+    <xacro:include filename="$(find zed_wrapper)/urdf/zed_macro.urdf.xacro" />
+
+    <!-- 1. Instantiate ZED camera (pass dummy block to satisfy *gnss_origin) -->
+    <xacro:zed_camera name="zed" model="zed2i">
+        <origin xyz="0 0 0" rpy="0 0 0" />
+    </xacro:zed_camera>
+
+    <!-- 2. Attach zed_camera_link to your rover chassis -->
+    <joint name="elecbox_to_zed_camera" type="fixed">
+        <parent link="elecbox_link"/>
+        <child link="zed_camera_link"/>
+        <origin xyz="0.145 0.0 0.6" rpy="0.0 0.0 0.0"/>
+    </joint>
+
+</robot>
