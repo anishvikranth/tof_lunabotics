@@ -1,0 +1,15 @@
+# Loaded after MAVROS's stock apm_config.yaml; only these values change.
+/**/time:
+  ros__parameters:
+    timesync_mode: NONE     # stamp messages with the companion computer's receive time
+    timesync_rate: 0.0      # don't send TIMESYNC (its RTT was seconds on this link)
+    system_time_rate: 0.0   # don't send SYSTEM_TIME to the FCU
+
+/**/distance_sensor:
+  ros__parameters:
+    config: |
+      rangefinder_pub:
+        id: 0
+        frame_id: "tof"
+        field_of_view: 0.0
+        send_tf: false

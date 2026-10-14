@@ -1,0 +1,12 @@
+# MAVROS plugins for the ToF crater setup: deny everything, then allow only what is needed.
+# (MAVROS loads a plugin unless it matches the denylist and not the allowlist.)
+/**:
+  ros__parameters:
+    plugin_denylist:
+      - '*'
+    plugin_allowlist:
+      - sys_status        # heartbeat, connection, /mavros/set_message_interval
+      - sys_time          # time sync settings below
+      - command           # MAVLink commands
+      - param             # /mavros/param (e.g. MAV1_EXTRA3)
+      - distance_sensor   # /mavros/rangefinder_pub
