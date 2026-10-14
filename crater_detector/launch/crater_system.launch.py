@@ -33,6 +33,9 @@ def generate_launch_description():
                               description='downward tilt (positive = down)'),
         DeclareLaunchArgument('base_frame', default_value='base_link'),
         DeclareLaunchArgument('sensor_frame', default_value='tof'),
+        DeclareLaunchArgument('map_topic', default_value='/map',
+                              description='occupancy grid whose size/origin the crater map follows '
+                                          '(rover: /rtabmap/grid_prob_map)'),
         DeclareLaunchArgument('publish_static_tf', default_value='true',
                               description='false if your URDF already has base_link -> tof'),
         OpaqueFunction(function=static_tf),
@@ -42,5 +45,6 @@ def generate_launch_description():
         Node(package='crater_detector', executable='crater_mapper_node',
              name='crater_mapper', output='screen',
              parameters=[os.path.join(share, 'config', 'crater_mapper.yaml'),
-                         {'sensor_frame': LaunchConfiguration('sensor_frame')}]),
+                         {'sensor_frame': LaunchConfiguration('sensor_frame'),
+                          'map_topic': LaunchConfiguration('map_topic')}]),
     ])
