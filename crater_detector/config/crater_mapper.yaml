@@ -19,6 +19,7 @@ crater_mapper:
     median_window: 5           # spike filter on range
     line_max_age: 0.3          # beam-line marking only if last ground point is newer (s)
     line_max_dist: 1.5         # ... and closer than this (m)
+    max_tf_age: 0.25           # skip readings if the latest pose is older than this (s)
     publish_rate: 2.0          # Hz; publishes only when the map changed
     cloud_height: 0.2          # z above ground for /crater_cloud points (m)
     assumed_depth: 0.50        # reported depth when the floor is not measured deeper (m)

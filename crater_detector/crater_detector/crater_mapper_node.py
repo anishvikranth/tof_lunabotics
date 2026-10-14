@@ -18,7 +18,6 @@ from statistics import median
 
 import numpy as np
 import rclpy
-from rclpy.duration import Duration
 from rclpy.node import Node
 from rclpy.qos import DurabilityPolicy, HistoryPolicy, QoSProfile, ReliabilityPolicy
 from rclpy.time import Time
@@ -104,6 +103,8 @@ class CraterMapper(Node):
         # Beam-line marking only if the last ground point is this recent and close.
         self.declare_parameter('line_max_age', 0.3)
         self.declare_parameter('line_max_dist', 1.5)
+        # Skip readings when the latest pose is older than this (s), e.g. ZED tracking lost.
+        self.declare_parameter('max_tf_age', 0.25)
         self.declare_parameter('publish_rate', 2.0)
         self.declare_parameter('cloud_height', 0.2)  # z above ground for /crater_cloud points
         self.declare_parameter('assumed_depth', 0.50)
@@ -118,6 +119,7 @@ class CraterMapper(Node):
         self.ground_tol = p('ground_tol')
         self.line_max_age = p('line_max_age')
         self.line_max_dist = p('line_max_dist')
+        self.max_tf_age = p('max_tf_age')
         self.cloud_height = p('cloud_height')
         self.assumed_depth = p('assumed_depth')
 
@@ -246,18 +248,30 @@ class CraterMapper(Node):
     # ---------- readings ----------
 
     def lookup(self, stamp):
+        # No timeout: waiting would block this node's executor, so the TF listener
+        # (same executor) could not receive new transforms and the buffer falls behind.
         try:
             return self.tf_buffer.lookup_transform(
-                self.map_frame, self.sensor_frame, Time.from_msg(stamp),
-                timeout=Duration(seconds=0.05))
+                self.map_frame, self.sensor_frame, Time.from_msg(stamp))
         except TransformException:
             pass
         try:
-            return self.tf_buffer.lookup_transform(self.map_frame, self.sensor_frame, Time())
+            tf = self.tf_buffer.lookup_transform(self.map_frame, self.sensor_frame, Time())
         except TransformException as e:
             self.get_logger().warn(f'No TF {self.map_frame} -> {self.sensor_frame}: {e}',
                                    throttle_duration_sec=5.0)
             return None
+        # A frozen pose (odometry stopped) would put marks at the wrong place.
+        # Stamp 0 means an all-static chain (bench test), which is always valid.
+        tf_time = Time.from_msg(tf.header.stamp)
+        if tf_time.nanoseconds > 0:
+            age = (self.get_clock().now() - tf_time).nanoseconds / 1e9
+            if age > self.max_tf_age:
+                self.get_logger().warn(
+                    f'Pose {self.map_frame} -> {self.sensor_frame} is {age:.1f} s old '
+                    '(odometry stopped?), skipping readings', throttle_duration_sec=5.0)
+                return None
+        return tf
 
     def on_range(self, msg: Range):
         r = msg.range
