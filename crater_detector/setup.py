@@ -29,7 +29,8 @@ setup(
     },
     entry_points={
         'console_scripts': [
-            'crater_detector_node = crater_detector.crater_detector_node:main'
+            'crater_detector_node = crater_detector.crater_detector_node:main',
+            'crater_mapper_node = crater_detector.crater_mapper_node:main',
         ],
     },
 )

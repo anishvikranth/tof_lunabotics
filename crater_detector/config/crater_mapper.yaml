@@ -1,0 +1,24 @@
+crater_mapper:
+  ros__parameters:
+    range_topic: /mavros/rangefinder_pub
+    map_topic: /map            # crater grid copies this map's size/origin (RTAB-Map)
+    map_frame: map
+    sensor_frame: lidar
+    # Fallback grid until /map arrives
+    resolution: 0.05
+    width_m: 20.0
+    height_m: 20.0
+    origin_x: -10.0
+    origin_y: -10.0
+    mark_radius: 0.12          # disc marked around each crater hit (m)
+    confirm_hits: 3            # hits before a cell becomes 100 (crater)
+    noreturn_weight: 1         # hits added for a no-return reading
+    depth_threshold: 0.08      # below ground by more than this = crater point (m)
+    ground_tol: 0.05           # within this of ground level = ground point (m)
+    ground_window: 30          # readings in the rolling ground-level median
+    median_window: 5           # spike filter on range
+    line_max_age: 0.3          # beam-line marking only if last ground point is newer (s)
+    line_max_dist: 1.5         # ... and closer than this (m)
+    publish_rate: 2.0          # Hz; publishes only when the map changed
+    cloud_height: 0.2          # z above ground for /crater_cloud points (m)
+    assumed_depth: 0.50        # reported depth when the floor is not measured deeper (m)
