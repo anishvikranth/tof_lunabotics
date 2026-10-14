@@ -4,7 +4,7 @@ crater_detector:
     output_topic: /crater_detected
     baseline: 0.0              # ground distance d (m); 0.0 = auto-calibrate at startup
     calibration_samples: 30    # readings averaged (median) for d
-    jump_threshold: 0.15       # d_new - d above this = crater point (m)
+    jump_threshold: 0.09       # d_new - d above this = crater point (m); ~0.05 m deep / sin(33 deg)
     median_window: 5           # spike filter length
     confirm_count: 3           # consecutive readings to switch true/false
     no_return_is_crater: true  # no echo (inf / > max_range) counts as crater

@@ -577,14 +577,14 @@
     <child link="zed_camera_link"/>
     <origin rpy="0.0 0.0 0.0" xyz="0.145 0.0 0.6"/>
   </joint>
-  <!-- 3. ToF crater sensor (TFmini Plus) mounted on top of the ZED, tilted 20 deg down from horizontal.
+  <!-- 3. ToF crater sensor (TFmini Plus) mounted on top of the ZED, tilted 33 deg down from horizontal (flat-ground reading d ~ 1.2 m).
        xyz = ToF lens position from the ZED's bottom tripod-screw hole (x forward, y left, z up, m):
        assumed centred over the ZED, z = ZED height 0.030 + ~0.011 to the lens centre. Adjust if measured.
-       rpy pitch = downward tilt in radians (20 deg = 0.349; positive = down). -->
+       rpy pitch = downward tilt in radians (33 deg = 0.576; positive = down). -->
   <link name="tof"/>
   <joint name="zed_to_tof" type="fixed">
     <parent link="zed_camera_link"/>
     <child link="tof"/>
-    <origin rpy="0.0 0.3490658503988659 0.0" xyz="0.0 0.0 0.041"/>
+    <origin rpy="0.0 0.5759586531581288 0.0" xyz="0.0 0.0 0.041"/>
   </joint>
 </robot>
