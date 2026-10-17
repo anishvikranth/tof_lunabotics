@@ -8,51 +8,23 @@ RTAB-Map handle positive obstacles; this project adds the holes they cannot see.
 - `crater_mapper` builds a **crater map** for Nav2: `/crater_map` (OccupancyGrid).
 
 Status: both nodes work in simulation and in a hand-held laptop test with the ZED.
-On the rover (Orin), MAVROS is installed and connects, but the Pixhawk currently reports
-`PreArm: Rangefinder 1: Not Detected`, so no end-to-end rover test has been done yet.
+On the rover (Orin), MAVROS receives the ToF distance and `crater_detector` works.
+The mapper and Nav2 integration have not been run on the rover yet.
 See **[Pending work](#pending-work)**.
 
 ---
 
 ## Contents
-1. [Hardware and data flow](#hardware-and-data-flow)
-2. [Repository structure](#repository-structure)
-3. [How the nodes work](#how-the-nodes-work)
-4. [Topics, services, frames](#topics-services-frames)
-5. [Install and build](#install-and-build)
-6. [Running](#running)
-7. [Rover integration (orin_files)](#rover-integration-orin_files)
-8. [Pixhawk / ArduPilot setup](#pixhawk--ardupilot-setup)
-9. [What has been tested](#what-has-been-tested)
-10. [Known issues and gotchas](#known-issues-and-gotchas)
-11. [Pending work](#pending-work)
-
----
-
-## Hardware and data flow
-
-```
-TFmini Plus (I2C, addr 0x10)
-   → Pixhawk 2.4.8 "Pixhawk1" (ArduCopter 4.7.0 firmware, used only as a sensor hub)
-   → USB /dev/ttyACM0
-   → MAVROS on the companion computer → /mavros/rangefinder_pub (sensor_msgs/Range)
-   → crater_detector → /crater_detected
-   → crater_mapper (+ TF map → … → tof from RTAB-Map/EKF/URDF) → /crater_map → Nav2 costmaps
-```
-
-| Machine | OS / ROS | Use |
-|---|---|---|
-| Rover: Nvidia Orin (`nano@…`) | Ubuntu 22.04, ROS 2 **Humble** | the real system |
-| Dev laptop | Ubuntu 24.04, ROS 2 **Jazzy** | development, simulation, hand-held tests |
-
-The code uses only APIs common to Humble and Jazzy (rclpy, tf2_ros, numpy).
-
-**Sensor mount (current plan):** ToF on top of the ZED 2i, centred, tilted **33° down from
-horizontal**. With the lens ≈ 0.65 m above the ground this gives a flat-ground reading
-**d ≈ 1.2 m**, hitting the ground ≈ 1.0 m ahead. Not yet measured on the real rover.
-
-TFmini Plus I2C wiring to the Pixhawk I2C port: red = 5 V, black = GND, white = SDA,
-green = SCL. The sensor must be switched to I2C mode once (it ships in UART mode).
+1. [Repository structure](#repository-structure)
+2. [How the nodes work](#how-the-nodes-work)
+3. [Topics, services, frames](#topics-services-frames)
+4. [Install and build](#install-and-build)
+5. [Running](#running)
+6. [Rover integration (orin_files)](#rover-integration-orin_files)
+7. [Pixhawk / ArduPilot setup](#pixhawk--ardupilot-setup)
+8. [What has been tested](#what-has-been-tested)
+9. [Known issues and gotchas](#known-issues-and-gotchas)
+10. [Pending work](#pending-work)
 
 ---
 
@@ -300,7 +272,8 @@ PreArm errors about RC, gyros or battery only block arming and can be ignored.
 | Laptop + Pixhawk + ToF + ZED 2i (hand-held) | sensor 20 Hz, TF `map → tof` OK, ground level set, free cells marked |
 | Minimal MAVROS launch | exactly 5 plugins load, timesync off, services present |
 | URDF copy in robot_state_publisher | `base_footprint → tof` as expected |
-| **Rover (Orin)** | MAVROS connects; **ToF not detected by the Pixhawk, no data yet** |
+| Rover (Orin): minimal MAVROS + `crater_detector` | ToF distance received; `/crater_detected` works |
+| Rover (Orin): `crater_mapper` with bringup + RTAB-Map | **not tested** |
 | Nav2 with the crater layer | **not tested** |
 
 ---
@@ -334,35 +307,34 @@ PreArm errors about RC, gyros or battery only block arming and can be ignored.
 
 In rough priority order.
 
-1. **Fix `PreArm: Rangefinder 1: Not Detected` on the rover.** Check TFmini wiring after the
-   remount on the ZED (SDA/SCL not swapped, 5 V present), then reboot the Pixhawk.
-2. **Run the rover test order** (Running → Full system), stages 1–6, and record results.
-3. **Measure the real ToF mount** relative to the ZED screw hole (x, y, z, tilt) and update
+1. **Run the rest of the rover test order** (Running → Full system): stage 1 (MAVROS +
+   detector) works; stages 2–6 (bringup, RTAB-Map, crater_mapper, RViz, teleop) are next.
+2. **Measure the real ToF mount** relative to the ZED screw hole (x, y, z, tilt) and update
    `orin_files/cac_rover_tof_test.urdf`. Confirm d ≈ 1.2 m on flat ground; if the tilt
    changes, update `jump_threshold` (≈ 0.05 / sin(tilt)).
-4. **Install the `orin_files`** into the rover packages (back up originals).
-5. **Check for TF conflicts** on the running rover: `ros2 run tf2_tools view_frames`.
+3. **Install the `orin_files`** into the rover packages (back up originals).
+4. **Check for TF conflicts** on the running rover: `ros2 run tf2_tools view_frames`.
    Not yet reviewed: `cac_rover_description/config/ekf.yaml` (should publish
    `odom → base_footprint`), the `zed_tf_node` source (must not duplicate URDF
    `base_link → zed_camera_link`), `zed_aruco_loc.launch.py` (must not publish
    `map → odom` while RTAB-Map does).
-6. **Verify Nav2 merging:** with `/crater_map` publishing, RTAB-Map's obstacles must still
+5. **Verify Nav2 merging:** with `/crater_map` publishing, RTAB-Map's obstacles must still
    appear in the global costmap (confirms `use_maximum` on Humble), and a goal behind a
    crater must route around it.
-7. **Write the stop-and-scan behaviour node** (not started). On `/crater_detected` = true:
+6. **Write the stop-and-scan behaviour node** (not started). On `/crater_detected` = true:
    stop (cancel the Nav2 goal or a zero-velocity `twist_mux` input), rotate in place
    +40° → −40° → 0 at ≈ 10°/s so the mapper covers the crater, optionally back up 0.3 m
    and repeat, then resend the goal. Subscribe with queue depth 1 and treat a value older
    than ~1 s as stale (the detector stops publishing if the sensor drops out).
-8. **Switch the bringup's optional MAVROS** in `rover_bringup_tof_test.py` from the stock
+7. **Switch the bringup's optional MAVROS** in `rover_bringup_tof_test.py` from the stock
    `apm.launch` to `mavros_crater.launch.py`.
-9. **Tune on real terrain** (sand, rocks): `jump_threshold`, `depth_threshold`,
+8. **Tune on real terrain** (sand, rocks): `jump_threshold`, `depth_threshold`,
    `confirm_hits`, `mark_radius`, inflation radius.
-10. **Improve size estimates:** a single stop + sweep underestimates (near wall hidden;
+9. **Improve size estimates:** a single stop + sweep underestimates (near wall hidden;
     0.79 × 0.46 m for a 1 × 1 m crater in simulation). Add a second scan from 0.3 m back.
-11. **Consider a ZED obstacle layer** in Nav2 (the team's config has none) with
+10. **Consider a ZED obstacle layer** in Nav2 (the team's config has none) with
     `min_obstacle_height` ≈ 0.05 m.
-12. Nice to have: crater marks do not move with RTAB-Map loop closures; `/crater_info` is a
+11. Nice to have: crater marks do not move with RTAB-Map loop closures; `/crater_info` is a
     JSON string (could become a custom message); no unit tests beyond the template lint tests;
     the detector does not use IMU pitch.
 
